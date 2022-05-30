@@ -6,70 +6,163 @@ namespace TicTacToe
     {
         static void Main()
         {
-            TicTacToeGame game = new();
-            game.RunGame();
+            while (true)
+            {
+                TicTacToeGame game = new();
+                game.RunGame();
+            }
+            
         }
 
         public class TicTacToeGame
         {
             public int _roundTracker = 0;
-            public bool _gameOver = false;
+            public int _totalRounds;
+            public int _roundsNeededToWin;
 
             public void RunGame()
             {
-                // Initializing all needed instances of all objects
+                // Initializing all needed instances of all objects at this phase
                 Player player1 = new('X');
                 Player player2 = new('O');
-                GameBoard board = new();
 
-                board.DrawBoard();
+                Console.Write("Please choose a mode:\n" +
+                                  " 1. Single game\n" +
+                                  " 2. Best of 3\n" +
+                                  " 3. Best of 5\n");
+                _totalRounds = Convert.ToInt32(Console.ReadLine()) switch 
+                {
+                    1 => 1,
+                    2 => 3,
+                    3 => 5,
+                    _ => 1
+                };
+
+                _roundsNeededToWin = _totalRounds / 2 + 1;
 
                 do
                 {
-                    // Increments the round number after player 2 completes their turn and game hasn't ended, or on game start
+                    // Placed at the top to stop unnecessary overcounting
                     _roundTracker++;
 
+                    // Block to output helpful info to the players
+                    Console.Write($"\nRound wins needed to win the game: {_totalRounds / 2 + 1}\n" +
+                                  $"Player 1 wins: {player1.NumberWins}\n" +
+                                  $"Player 2 wins: {player2.NumberWins}\n");
+
+                    // Prints the round number and waits to proceed until interaction
+                    Console.WriteLine($"\nRound {_roundTracker}" +
+                                      $"\nPress any key to start");
+                    Console.ReadKey(true);
+                    
+                    // Triggers the next round
+                    Round newRound = new ();
+                    newRound.DoRound(player1, player2);
+
+
+                } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
+            }
+        }
+
+        public class GameBoard
+        {
+            public static (int x, int y) _boardSize = (3, 3);
+            public BoardTile[,] TileMatrix { get; init; } = new BoardTile[_boardSize.x, _boardSize.y];
+
+            public GameBoard()
+            {                
+                for(int i = 0; i < _boardSize.y; i++)
+                {
+                    for(int j = 0; j < _boardSize.x; j++)
+                        TileMatrix[i, j] = new BoardTile(i,j);
+                }
+            }
+
+            public void DrawBoard()
+            {
+                // Drawing an empty line as a buffer
+                Console.WriteLine();
+                
+                // Loops through the size of the board in 1 dimension to draw each row
+                for (int i = 0; i < _boardSize.x; i++)
+                {
+                    Console.WriteLine($"  { TileMatrix[i, 0].XorO } | { TileMatrix[i, 1].XorO } | { TileMatrix[i, _boardSize.x - 1].XorO } ");
+
+                    if (i < _boardSize.y - 1)
+                        Console.WriteLine(" ---+---+---");
+                    else continue;
+                }
+
+                Console.WriteLine();
+            }
+
+            // Takes the tile selected by a user, and then uses its coordinates to match it up with the correct tile in the Tile Matrix, then sets the correct contents
+            public void UpdateTileContent(BoardTile tileToUpdate) => TileMatrix[tileToUpdate.Coordinates.x, tileToUpdate.Coordinates.y].XorO = tileToUpdate.XorO;
+        }
+
+        public class BoardTile
+        {
+            public  (int x, int y) Coordinates { get; init; }
+            public string XorO { get; set; } = " ";
+
+            // Setting the coordinates outright, but leaving the contents to be determined
+            public BoardTile(int x, int y) => Coordinates = (x, y);
+            
+        }
+
+        public class Round
+        {
+            public int _turnCount = 0;
+
+            public void DoRound(Player player1, Player player2)
+            {
+                GameBoard board = new();
+
+                board.DrawBoard();
+                do
+                {
+                    // Increments the round number after player 2 completes their turn and game hasn't ended, or on game start
+                    _turnCount++;
+
                     // Player 1's turn
-                    Console.WriteLine($"Turn: {_roundTracker}");
+                    Console.WriteLine($"Turn: {_turnCount}");
                     Console.WriteLine($"It's Player {player1.PlayerSymbol}'s turn.\n");
                     player1.SetTileChoice(board);
                     board.DrawBoard();
 
-                    // Checks for game over after Player 1's turn and breaks immediately
-                    if (CheckForGameOver(board, player1, _roundTracker)) break;
+                    // Checks for game over after Player 1's turn and breaks immediately if true
+                    if (CheckForRoundOver(board, player1, _turnCount)) break;
                     
-
-                    // Increments the round number after player 1 completes their turn and game doesn't end
-                    _roundTracker++;
+                    // Increments the turn number after player 1 completes their turn and game doesn't end
+                    _turnCount++;
 
                     // Player 2's turn
-                    Console.WriteLine($"Turn: {_roundTracker}");
+                    Console.WriteLine($"Turn: {_turnCount}");
                     Console.WriteLine($"It's Player {player2.PlayerSymbol}'s turn.\n");
                     player2.SetTileChoice(board);
                     board.DrawBoard();
 
-                    CheckForGameOver(board, player2, _roundTracker);
-
-                } while (_gameOver != true);
-
+                    if(CheckForRoundOver(board, player2, _turnCount)) break;
+                    
+                } while (_turnCount < 10);
             }
-
+            
             // Checks for the variety of game over states and sets _gameOver accordingly, then writes the outcome
-            public bool CheckForGameOver(GameBoard board, Player currentPlayer, int turn)
+            public bool CheckForRoundOver(GameBoard board, Player currentPlayer, int turn)
             {
-                if(HorizontalWin(board, turn) || VerticalWin(board, turn) || DiagonalWin(board, turn))
+                if (HorizontalWin(board, turn) || VerticalWin(board, turn) || DiagonalWin(board, turn))
                 {
+                    currentPlayer.NumberWins++;
                     Console.WriteLine($"     **********\n" +
                                       $"     {{{currentPlayer.PlayerSymbol}'s win!}}\n" +
-                                      $"     **********");
-                    _gameOver = true;
+                                      $"     **********\n" +
+                                      $"     Player {currentPlayer.PlayerSymbol} Wins: {currentPlayer.NumberWins}");
                     return true;
                 }
 
-                else if(CatBoard(board, turn))
+                else if (CatBoard(board, turn))
                 {
-                    Console.WriteLine("The game ends in a draw.");
-                    _gameOver = true;
+                    Console.WriteLine("The round ends in a draw.");
                     return true;
                 }
 
@@ -83,10 +176,10 @@ namespace TicTacToe
                 {
                     for (int i = 0; i < GameBoard._boardSize.x; i++)
                         if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && !String.IsNullOrWhiteSpace(board.TileMatrix[i, 0].XorO)) return true;
-                    
+
                     return false;
                 }
-                
+
                 else return false;
             }
 
@@ -120,69 +213,17 @@ namespace TicTacToe
             // Currently only detects a full board
             public bool CatBoard(GameBoard board, int turn)
             {
-                /*
-                if (turn > 2) 
+                if (turn > 2)
                 {
                     foreach (BoardTile tile in board.TileMatrix)
-                    {
-                        Console.WriteLine(tile.TileID);
+
                         if (String.IsNullOrWhiteSpace(tile.XorO)) return false;
-                        else return true;
-                    }
+
+
+                    return true;
                 }
-                */
+
                 return false;
-            }
-        }
-
-        public class GameBoard
-        {
-            public static (int x, int y) _boardSize = (3, 3);
-            public BoardTile[,] TileMatrix { get; init; } = new BoardTile[_boardSize.x, _boardSize.y];
-
-            public GameBoard()
-            {                
-                for(int i = 0; i < _boardSize.y; i++)
-                {
-                    for(int j = 0; j < _boardSize.x; j++)
-                        TileMatrix[i, j] = new BoardTile(i,j,(i + j));
-                }
-            }
-
-            public void DrawBoard()
-            {
-                // Drawing an empty line as a buffer
-                Console.WriteLine();
-                
-                // Loops through the size of the board in 1 dimension to draw each row
-                for (int i = 0; i < _boardSize.x; i++)
-                {
-                    Console.WriteLine($"  { TileMatrix[i, 0].XorO } | { TileMatrix[i, 1].XorO } | { TileMatrix[i, _boardSize.x - 1].XorO } ");
-
-                    if (i < _boardSize.y - 1)
-                        Console.WriteLine(" ---+---+---");
-                    else continue;
-                }
-
-                Console.WriteLine();
-            }
-
-            // Takes the tile selected by a user, and then uses its coordinates to match it up with the correct tile in the Tile Matrix, then sets the correct contents
-            public void UpdateTileContent(BoardTile tileToUpdate) => TileMatrix[tileToUpdate.Coordinates.x, tileToUpdate.Coordinates.y].XorO = tileToUpdate.XorO;
-        }
-
-        public class BoardTile
-        {
-            public int TileID { get; init; }
-            public  (int x, int y) Coordinates { get; init; }
-            public string XorO { get; set; } = " ";
-
-            // Setting the coordinates outright, but leaving the contents to be determined
-            //public BoardTile(int x, int y, int ID) => Coordinates = (x, y);
-            public BoardTile(int x, int y, int key)
-            {
-                TileID = key;
-                Coordinates = (x, y);
             }
         }
 
@@ -190,6 +231,7 @@ namespace TicTacToe
         {
             public byte TileChoice { get; set; }
             public char PlayerSymbol { get; init; }
+            public int NumberWins { get; set; }
 
             public Player(char setSymbol) => PlayerSymbol = setSymbol;
 
