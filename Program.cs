@@ -6,12 +6,32 @@ namespace TicTacToe
     {
         static void Main()
         {
-            while (true)
+            // Initializes and sets the window title before entering into the main loop
+            Menu menu = new();
+            menu.SetWindowTitle();
+            Options selectedOption;
+
+            // Keeps player on title menu until they explicitly ask to leave
+            do
             {
+                menu.Display();
+                selectedOption = menu.UserChoice();
+
                 TicTacToeGame game = new();
-                game.RunGame();
-            }
-            
+
+                /*selectedOption switch
+                {
+                    Options.Human => game.RunGame(),
+                    Options.AI => game.RunGame(),
+                    Options.Stats => game.RunGame(),
+                    Options.Settings => game.RunGame()
+                    Options.Quit => break;
+                }; Not sure yet how to proceed with the actual 
+                   choice processing logic */
+
+            } while (selectedOption != Options.Quit);
+
+
         }
 
         public class TicTacToeGame
@@ -299,6 +319,53 @@ namespace TicTacToe
             }
         }
 
+        public class Menu
+        {
+            private readonly string _windowTitle = "Tic Tac Toe";
+            public Options[] _options;
+
+
+            // Constructor initializes the list of options using the enum
+            public Menu() =>_options = new[] { Options.Human, Options.AI, Options.Stats, Options.Settings, Options.Quit };
+            
+
+            public void Display()
+            {
+                Console.WriteLine("<<<<< OPTIONS >>>>>");
+
+                for (int i = 0; i < _options.Length; i++)
+                    Console.WriteLine($" {i + 1}: {ConvertOptionToString(_options[i])}");
+            }
+
+            public Options UserChoice()
+            {
+                Console.WriteLine("Select an option by entering the corresponding number: ");
+                byte userInput = Convert.ToByte(Console.ReadLine());
+
+                while (true)
+                {
+                    if (userInput >= 1 && userInput < _options.Length)
+                        return userInput switch    // Doesn't need default option as user is forced to enter a correct value
+                        {
+                            1 => _options[1],
+                            2 => _options[2],
+                            3 => _options[3],
+                            4 => _options[4],
+                            5 => _options[5]    
+                        };
+
+                    else Console.WriteLine("Please enter a valid option");
+                }
+                
+            }
+
+            public void SetWindowTitle() => Console.Title = _windowTitle;
+
+            // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
+            private static string ConvertOptionToString(Options optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => $"{optionToConvert}" };
+        }
+
         public enum Symbol {Empty, X, O}
+        public enum Options { Human, AI, Stats, Settings, Quit}
     }
 }
