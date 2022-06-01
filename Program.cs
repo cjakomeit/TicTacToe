@@ -209,55 +209,35 @@ namespace TicTacToe
             // There are three possible win conditions, and can only happen after turn 2. Loops through the three possible conditions based on column
             public static bool HorizontalWin(GameBoard board, int turn)
             {
-                if (turn > 2)
-                {
-                    for (int i = 0; i < GameBoard._boardSize.x; i++)
-                        if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && board.TileMatrix[i, 0].XorO != Symbol.Empty) return true;
+                for (int i = 0; i < GameBoard._boardSize.x; i++)
+                    if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && board.TileMatrix[i, 0].XorO != Symbol.Empty) return true;
 
-                    return false;
-                }
-
-                else return false;
+                return false;
             }
 
             // There are three possible win conditions like with horizontal, and can only happen after turn 2
             public static bool VerticalWin(GameBoard board, int turn)
             {
-                if (turn > 2)
-                {
-                    for (int i = 0; i < GameBoard._boardSize.y; i++)
-                        if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && board.TileMatrix[0, i].XorO != Symbol.Empty) return true;
+                for (int i = 0; i < GameBoard._boardSize.y; i++)
+                    if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && board.TileMatrix[0, i].XorO != Symbol.Empty) return true;
 
-                    return false;
-                }
-
-                else return false;
+                return false;
             }
 
             // There are only two diagonal win possibilities, and can only happen after round two
             public static bool DiagonalWin(GameBoard board, int turn)
             {
-                if (turn > 2)
-                {
-                    if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
-                    else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
-                    else return false;
-                }
-
+                if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
+                else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
                 else return false;
             }
 
             // Currently only detects a full board
             public static bool CatBoard(GameBoard board, int turn)
             {
-                if (turn > 2)
-                {
-                    foreach (BoardTile tile in board.TileMatrix)
+                foreach (BoardTile tile in board.TileMatrix)
                         if (tile.XorO == Symbol.Empty) return false;
                     return true;
-                }
-
-                return false;
             }
         }
 
