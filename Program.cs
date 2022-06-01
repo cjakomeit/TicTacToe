@@ -7,27 +7,22 @@ namespace TicTacToe
         static void Main()
         {
             // Initializes and sets the window title before entering into the main loop
-            Menu menu = new();
-            menu.SetWindowTitle();
+            Menu titleMenu = new();
+            titleMenu.SetWindowTitle();
             Options selectedOption;
 
             // Keeps player on title menu until they explicitly ask to leave
             do
             {
-                menu.Display();
-                selectedOption = menu.UserChoice();
-
                 TicTacToeGame game = new();
 
-                /*selectedOption switch
-                {
-                    Options.Human => game.RunGame(),
-                    Options.AI => game.RunGame(),
-                    Options.Stats => game.RunGame(),
-                    Options.Settings => game.RunGame()
-                    Options.Quit => break;
-                }; Not sure yet how to proceed with the actual 
-                   choice processing logic */
+                titleMenu.Display();
+                selectedOption = titleMenu.UserChoice();
+
+                if (selectedOption == Options.Human) game.RunGame();
+                else if (selectedOption == Options.AI) game.RunGame();
+                else if (selectedOption == Options.Stats) game.RunGame();
+                else if (selectedOption == Options.Settings) game.RunGame();
 
             } while (selectedOption != Options.Quit);
 
@@ -319,16 +314,16 @@ namespace TicTacToe
             }
         }
 
+        // Need a way to make this just a standard Menu class so that it works for both the Title Menu and In-Game menu
         public class Menu
         {
             private readonly string _windowTitle = "Tic Tac Toe";
             public Options[] _options;
 
 
-            // Constructor initializes the list of options using the enum
-            public Menu() =>_options = new[] { Options.Human, Options.AI, Options.Stats, Options.Settings, Options.Quit };
-            
-
+            // Constructor initializes the list of options using the enum (would like to find a way to make this more universal)
+            public Menu() => _options = new[] { Options.Human, Options.AI, Options.Stats, Options.Settings, Options.Quit};
+                        
             public void Display()
             {
                 Console.WriteLine("<<<<< OPTIONS >>>>>");
@@ -339,21 +334,29 @@ namespace TicTacToe
 
             public Options UserChoice()
             {
-                Console.WriteLine("Select an option by entering the corresponding number: ");
-                byte userInput = Convert.ToByte(Console.ReadLine());
-
                 while (true)
                 {
-                    if (userInput >= 1 && userInput < _options.Length)
-                        return userInput switch    // Doesn't need default option as user is forced to enter a correct value
-                        {
-                            1 => _options[1],
-                            2 => _options[2],
-                            3 => _options[3],
-                            4 => _options[4],
-                            5 => _options[5]    
-                        };
+                    Console.Write("Select an option by entering the corresponding number: ");
+                    byte userInput = Convert.ToByte(Console.ReadLine());
+                    Console.WriteLine($"{userInput}");
 
+                    if (userInput >= 1 && userInput < _options.Length + 1)
+                        return userInput switch
+                        {
+                            (byte)Options.Human + 1    => Options.Human,
+                            (byte)Options.AI + 1       => Options.AI,
+                            (byte)Options.Stats + 1    => Options.Stats,
+                            (byte)Options.Settings + 1 => Options.Settings,
+                            (byte)Options.Quit + 1     => Options.Quit
+                        };
+                        
+                        /* Above is a complex solution that hopefully makes this more adaptable as a single menu class later on.
+                         * Essentially I take each enum and cast it to it's integral value and add 1 to match user input. Then
+                         * use that casted enum value to point directly to the enum value. Not totally sure about this solution
+                         * but looking to the future essentially it would mean just adding whatever enum values and their
+                         * associated byte + 1 values to the switch statement, rather than ensuring the index is correct in the array.
+                        */  
+                        
                     else Console.WriteLine("Please enter a valid option");
                 }
                 
