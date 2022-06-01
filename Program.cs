@@ -23,8 +23,8 @@ namespace TicTacToe
             public void RunGame()
             {
                 // Initializing all needed instances of all objects at this phase
-                Player player1 = new('X');
-                Player player2 = new('O');
+                Player player1 = new(Symbol.X);
+                Player player2 = new(Symbol.O);
 
                 Console.Write("Please choose a mode:\n" +
                                   " 1. Single game\n" +
@@ -38,6 +38,7 @@ namespace TicTacToe
                     _ => 1
                 };
 
+                // Determine the rounds needed to win following player input
                 _roundsNeededToWin = _totalRounds / 2 + 1;
 
                 do
@@ -86,7 +87,7 @@ namespace TicTacToe
                 // Loops through the size of the board in 1 dimension to draw each row
                 for (int i = 0; i < _boardSize.x; i++)
                 {
-                    Console.WriteLine($"  { TileMatrix[i, 0].XorO } | { TileMatrix[i, 1].XorO } | { TileMatrix[i, _boardSize.x - 1].XorO } ");
+                    Console.WriteLine($"  { TileMatrix[i, 0].ConverToChar() } | { TileMatrix[i, 1].ConverToChar()} | { TileMatrix[i, _boardSize.x - 1].ConverToChar() } ");
 
                     if (i < _boardSize.y - 1)
                         Console.WriteLine(" ---+---+---");
@@ -98,15 +99,20 @@ namespace TicTacToe
 
             // Takes the tile selected by a user, and then uses its coordinates to match it up with the correct tile in the Tile Matrix, then sets the correct contents
             public void UpdateTileContent(BoardTile tileToUpdate) => TileMatrix[tileToUpdate.Coordinates.x, tileToUpdate.Coordinates.y].XorO = tileToUpdate.XorO;
+
         }
 
         public class BoardTile
         {
             public  (int x, int y) Coordinates { get; init; }
-            public string XorO { get; set; } = " ";
+            public Symbol XorO { get; set; } = Symbol.Empty;
 
             // Setting the coordinates outright, but leaving the contents to be determined
             public BoardTile(int x, int y) => Coordinates = (x, y);
+
+            public bool IsEmpty() => XorO == Symbol.Empty;
+
+            public char ConverToChar() => XorO switch { Symbol.X => 'X', Symbol.O => 'O', Symbol.Empty => ' ' };
             
         }
 
@@ -124,7 +130,7 @@ namespace TicTacToe
                     // Increments the round number after player 2 completes their turn and game hasn't ended, or on game start
                     _turnCount++;
 
-                    // Player 1's turn
+                    /* Player 1's turn */
                     Console.WriteLine($"Turn: {_turnCount}");
                     Console.WriteLine($"It's Player {player1.PlayerSymbol}'s turn.\n");
                     player1.SetTileChoice(board);
@@ -136,7 +142,7 @@ namespace TicTacToe
                     // Increments the turn number after player 1 completes their turn and game doesn't end
                     _turnCount++;
 
-                    // Player 2's turn
+                    /* Player 2's turn */
                     Console.WriteLine($"Turn: {_turnCount}");
                     Console.WriteLine($"It's Player {player2.PlayerSymbol}'s turn.\n");
                     player2.SetTileChoice(board);
@@ -148,7 +154,7 @@ namespace TicTacToe
             }
             
             // Checks for the variety of game over states and sets _gameOver accordingly, then writes the outcome
-            public bool CheckForRoundOver(GameBoard board, Player currentPlayer, int turn)
+            public static bool CheckForRoundOver(GameBoard board, Player currentPlayer, int turn)
             {
                 if (HorizontalWin(board, turn) || VerticalWin(board, turn) || DiagonalWin(board, turn))
                 {
@@ -170,12 +176,12 @@ namespace TicTacToe
             }
 
             // There are three possible win conditions, and can only happen after turn 2. Loops through the three possible conditions based on column
-            public bool HorizontalWin(GameBoard board, int turn)
+            public static bool HorizontalWin(GameBoard board, int turn)
             {
                 if (turn > 2)
                 {
                     for (int i = 0; i < GameBoard._boardSize.x; i++)
-                        if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && !String.IsNullOrWhiteSpace(board.TileMatrix[i, 0].XorO)) return true;
+                        if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && board.TileMatrix[i, 0].XorO != Symbol.Empty) return true;
 
                     return false;
                 }
@@ -184,12 +190,12 @@ namespace TicTacToe
             }
 
             // There are three possible win conditions like with horizontal, and can only happen after turn 2
-            public bool VerticalWin(GameBoard board, int turn)
+            public static bool VerticalWin(GameBoard board, int turn)
             {
                 if (turn > 2)
                 {
                     for (int i = 0; i < GameBoard._boardSize.y; i++)
-                        if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && !String.IsNullOrWhiteSpace(board.TileMatrix[0, i].XorO)) return true;
+                        if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && board.TileMatrix[0, i].XorO != Symbol.Empty) return true;
 
                     return false;
                 }
@@ -198,12 +204,12 @@ namespace TicTacToe
             }
 
             // There are only two diagonal win possibilities, and can only happen after round two
-            public bool DiagonalWin(GameBoard board, int turn)
+            public static bool DiagonalWin(GameBoard board, int turn)
             {
                 if (turn > 2)
                 {
-                    if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && !String.IsNullOrWhiteSpace(board.TileMatrix[1, 1].XorO)) return true;
-                    else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && !String.IsNullOrWhiteSpace(board.TileMatrix[1, 1].XorO)) return true;
+                    if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
+                    else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
                     else return false;
                 }
 
@@ -211,15 +217,12 @@ namespace TicTacToe
             }
 
             // Currently only detects a full board
-            public bool CatBoard(GameBoard board, int turn)
+            public static bool CatBoard(GameBoard board, int turn)
             {
                 if (turn > 2)
                 {
                     foreach (BoardTile tile in board.TileMatrix)
-
-                        if (String.IsNullOrWhiteSpace(tile.XorO)) return false;
-
-
+                        if (tile.XorO == Symbol.Empty) return false;
                     return true;
                 }
 
@@ -229,11 +232,11 @@ namespace TicTacToe
 
         public class Player 
         {
-            public byte TileChoice { get; set; }
-            public char PlayerSymbol { get; init; }
+            public ConsoleKey TileChoice { get; set; }
+            public Symbol PlayerSymbol { get; init; }
             public int NumberWins { get; set; }
 
-            public Player(char setSymbol) => PlayerSymbol = setSymbol;
+            public Player(Symbol symbol) => PlayerSymbol = symbol;
 
             // Grabs the user choice, finds the associated tile in the matrix, then if that's a valid placement, it updates the tile's contents on the gameboard
             public void SetTileChoice(GameBoard board) 
@@ -243,35 +246,25 @@ namespace TicTacToe
                     // Asks the user for their selected tile, then finds a matching tile in the matrix 
                     TileChoice = QueryUser();
 
-                    if (TileChoice > 0 && TileChoice < 10)
+                    BoardTile selectedTile = TileChoice switch
                     {
-                        BoardTile selectedTile = TileChoice switch
-                        {
-                            9 => board.TileMatrix[0, 2],
-                            8 => board.TileMatrix[0, 1],
-                            7 => board.TileMatrix[0, 0],
-                            6 => board.TileMatrix[1, 2],
-                            5 => board.TileMatrix[1, 1],
-                            4 => board.TileMatrix[1, 0],
-                            3 => board.TileMatrix[2, 2],
-                            2 => board.TileMatrix[2, 1],
-                            1 => board.TileMatrix[2, 0]
-                        };
+                        ConsoleKey.NumPad9 => board.TileMatrix[0, 2],
+                        ConsoleKey.NumPad8 => board.TileMatrix[0, 1],
+                        ConsoleKey.NumPad7 => board.TileMatrix[0, 0],
+                        ConsoleKey.NumPad6 => board.TileMatrix[1, 2],
+                        ConsoleKey.NumPad5 => board.TileMatrix[1, 1],
+                        ConsoleKey.NumPad4 => board.TileMatrix[1, 0],
+                        ConsoleKey.NumPad3 => board.TileMatrix[2, 2],
+                        ConsoleKey.NumPad2 => board.TileMatrix[2, 1],
+                        ConsoleKey.NumPad1 => board.TileMatrix[2, 0]
+                    };
 
-                        // If the tile is a valid selection, make the contents the player symbol, then hand tile to the board to update
-                        if (ValidTileChoice(selectedTile))
-                        {
-                            selectedTile.XorO = Convert.ToString(PlayerSymbol);
-                            board.UpdateTileContent(selectedTile);
-                            break;
-                        }
-
-                        // Instructs user that a tile is taken and pushes them back to the top of the loop.
-                        else
-                        {
-                            Console.WriteLine("\nThat tile is taken. Please choose another.\n");
-                            continue;
-                        }
+                    // If the tile is a valid selection, make the contents the player symbol, then hand tile to the board to update
+                    if (ValidTileChoice(selectedTile))
+                    {
+                        selectedTile.XorO = PlayerSymbol;
+                        board.UpdateTileContent(selectedTile);
+                        break;
                     }
 
                     // Instructs user to choose another tile if the one they selected isn't valid
@@ -279,16 +272,17 @@ namespace TicTacToe
                 } while (true);
             }
 
-            public bool ValidTileChoice(BoardTile TileToCheck) => String.IsNullOrWhiteSpace(TileToCheck.XorO);
+            public static bool ValidTileChoice(BoardTile TileToCheck) => TileToCheck.XorO == Symbol.Empty;
 
-            public byte QueryUser()
+            public static ConsoleKey QueryUser()
             {
                 Console.Write("Please choose a number corresponding to the tile (1-9): ");
 
-                byte userResponse = Convert.ToByte(Console.ReadLine());
-                return userResponse;
+                ConsoleKey userInput = Console.ReadKey().Key;
+                return userInput;
             }
         }
 
+        public enum Symbol {Empty, X, O}
     }
 }
