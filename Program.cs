@@ -62,6 +62,23 @@ namespace TicTacToe
 
 
                 } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
+
+                ReportTournamentWinner(player1, player2);
+            }
+
+            public void ReportTournamentWinner (Player player1, Player player2)
+            {
+                if (player1.NumberWins == _roundsNeededToWin) 
+                    Console.WriteLine("\n +----------+" +
+                                      "\n | Player 1 |" +
+                                      "\n |   Wins!  |" +
+                                      "\n +----------+ \n");
+
+                else if (player2.NumberWins == _roundsNeededToWin)
+                    Console.WriteLine("\n +----------+" +
+                                      "\n | Player 2 |" +
+                                      "\n |   Wins!  |" +
+                                      "\n +----------+ \n");
             }
         }
 
@@ -159,10 +176,9 @@ namespace TicTacToe
                 if (HorizontalWin(board, turn) || VerticalWin(board, turn) || DiagonalWin(board, turn))
                 {
                     currentPlayer.NumberWins++;
-                    Console.WriteLine($"     **********\n" +
-                                      $"     {{{currentPlayer.PlayerSymbol}'s win!}}\n" +
-                                      $"     **********\n" +
-                                      $"     Player {currentPlayer.PlayerSymbol} Wins: {currentPlayer.NumberWins}");
+                    Console.WriteLine($" **********\n" +
+                                      $" {{{currentPlayer.PlayerSymbol}'s win!}}\n" +
+                                      $" **********");
                     return true;
                 }
 
