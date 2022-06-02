@@ -21,8 +21,8 @@ namespace TicTacToe
                 titleMenu.Display();
                 selectedOption = titleMenu.UserChoice();
 
-                if (selectedOption == Options.Human) game.RunGame();
-                else if (selectedOption == Options.AI) game.RunGame();
+                if (selectedOption == Options.Human) game.RunGame(gameStats);
+                else if (selectedOption == Options.AI) game.RunGame(gameStats);
                 else if (selectedOption == Options.Stats) gameStats.StatsScreen();
                 else if (selectedOption == Options.Settings) gameSettings.SettingsScreen();
 
@@ -37,7 +37,7 @@ namespace TicTacToe
             public int _totalRounds;
             public int _roundsNeededToWin;
 
-            public void RunGame()
+            public void RunGame(Stats gameStats)
             {
                 // Initializing all needed instances of all objects at this phase
                 Player player1 = new(Symbol.X);
@@ -75,12 +75,13 @@ namespace TicTacToe
 
                     // Triggers the next round
                     Round newRound = new();
-                    newRound.DoRound(player1, player2);
+                    newRound.DoRound(player1, player2, gameStats);
 
 
                 } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
 
                 ReportTournamentWinner(player1, player2);
+                gameStats.UpdatePlayedStat(StatsProperties.HumanGames);
             }
 
             public void ReportTournamentWinner(Player player1, Player player2)
@@ -155,11 +156,12 @@ namespace TicTacToe
         {
             public int _turnCount = 0;
 
-            public void DoRound(Player player1, Player player2)
+            public void DoRound(Player player1, Player player2, Stats gameStats)
             {
                 GameBoard board = new();
 
                 board.DrawBoard();
+
                 do
                 {
                     // Increments the round number after player 2 completes their turn and game hasn't ended, or on game start
@@ -172,7 +174,7 @@ namespace TicTacToe
                     board.DrawBoard();
 
                     // Checks for game over after Player 1's turn and breaks immediately if true
-                    if (CheckForRoundOver(board, player1)) break;
+                    if (CheckForRoundOver(board, player1, gameStats)) break;
 
                     // Increments the turn number after player 1 completes their turn and game doesn't end
                     _turnCount++;
@@ -183,17 +185,18 @@ namespace TicTacToe
                     player2.SetTileChoice(board);
                     board.DrawBoard();
 
-                    if (CheckForRoundOver(board, player2)) break;
+                    if (CheckForRoundOver(board, player2, gameStats)) break;
 
                 } while (_turnCount < 10);
             }
 
             // Checks for the variety of game over states and sets _gameOver accordingly, then writes the outcome
-            public static bool CheckForRoundOver(GameBoard board, Player currentPlayer)
+            public static bool CheckForRoundOver(GameBoard board, Player currentPlayer, Stats gameStats)
             {
                 if (HorizontalWin(board) || VerticalWin(board) || DiagonalWin(board))
                 {
                     currentPlayer.NumberWins++;
+                    gameStats.UpdateResultStat(currentPlayer.PlayerSymbol);
                     Console.WriteLine($" **********\n" +
                                       $" {{{currentPlayer.PlayerSymbol}'s win!}}\n" +
                                       $" **********");
@@ -471,13 +474,14 @@ namespace TicTacToe
 
         public class Stats
         {
+            // Leaving fields formatted as enum for readability
             private readonly string[] _statsProperties = Enum.GetNames(typeof(StatsProperties));
-            private int XWins { get; set; }
-            private int XLosses { get; set; }
-            private int OWins { get; set; }
-            private int OLosses { get; set; }
-            private int HumanGames { get; set; }
-            private int AIGames { get; set; }
+            private int XWins;
+            private int XLosses;
+            private int OWins;
+            private int OLosses;
+            private int HumanGames;
+            private int AIGames;
 
             public Stats()
             {
@@ -505,23 +509,28 @@ namespace TicTacToe
             }
 
             // Figure this will eventually both increment the associated property and write to a save file, before eventually just writing to a save file
-            public void UpdateStat(StatsProperties statToUpdate)
+            public void UpdateResultStat(Symbol playerSymbol)
             {
-                if (statToUpdate == StatsProperties.XWins) XWins++;
-                if (statToUpdate == StatsProperties.XLosses) XLosses++;
-                if (statToUpdate == StatsProperties.OWins) OWins++;
-                if (statToUpdate == StatsProperties.OLosses) OLosses++;
-                if (statToUpdate == StatsProperties.HumanGames) HumanGames++;
-                if (statToUpdate == StatsProperties.AIGames) AIGames++;
+                if (playerSymbol == Symbol.X)
+                { 
+                    XWins++; 
+                    OLosses++; 
+                }
+                
+                if (playerSymbol == Symbol.O)
+                {
+                    OWins++;
+                    XLosses++;
+                }
+            }
+
+            public void UpdatePlayedStat(StatsProperties gameType)
+            {
+                if (gameType == StatsProperties.HumanGames) HumanGames++;
+                if (gameType == StatsProperties.AIGames) AIGames++;
             }
 
             private int DetermineStatToShow(int statIndex) => statIndex switch { (int)StatsProperties.XWins => XWins, (int)StatsProperties.XLosses => XLosses, (int)StatsProperties.OWins => OWins, (int)StatsProperties.OLosses => OLosses, (int)StatsProperties.HumanGames => HumanGames, (int)StatsProperties.AIGames => AIGames };
-
-            private static string UserChoice()
-            {
-                Console.Write("\nPlease enter the number of the option you'd like to select: ");
-                return Console.ReadLine();
-            }
         }
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
