@@ -6,23 +6,24 @@ namespace TicTacToe
     {
         static void Main()
         {
-            // Initializes and sets the window title before entering into the main loop
+            // Initializes screens/game flows, then sets the window title before entering into the main loop
             Menu titleMenu = new();
-            titleMenu.SetWindowTitle();
+            TicTacToeGame game = new();
+            Settings gameSettings = new();
+            Stats gameStats = new();
             Options selectedOption;
+
+            titleMenu.SetWindowTitle();
 
             // Keeps player on title menu until they explicitly ask to leave
             do
             {
-                TicTacToeGame game = new();
-                Settings gameSettings = new();
-
                 titleMenu.Display();
                 selectedOption = titleMenu.UserChoice();
 
                 if (selectedOption == Options.Human) game.RunGame();
                 else if (selectedOption == Options.AI) game.RunGame();
-                else if (selectedOption == Options.Stats) game.RunGame();
+                else if (selectedOption == Options.Stats) gameStats.StatsScreen();
                 else if (selectedOption == Options.Settings) gameSettings.SettingsScreen();
 
             } while (selectedOption != Options.Quit);
@@ -300,11 +301,11 @@ namespace TicTacToe
         public class Menu
         {
             private readonly string _windowTitle = "Tic Tac Toe";
-            public Options[] _options;
+            public string[] _options = Enum.GetNames(typeof(Options));
 
 
             // Constructor initializes the list of options using the enum (would like to find a way to make this more universal)
-            public Menu() => _options = new[] { Options.Human, Options.AI, Options.Stats, Options.Settings, Options.Quit };
+            //public Menu() => _options = Enum.GetNames(typeof());
 
             public void Display()
             {
@@ -346,7 +347,7 @@ namespace TicTacToe
             public void SetWindowTitle() => Console.Title = _windowTitle;
 
             // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
-            private static string ConvertOptionToString(Options optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => $"{optionToConvert}" };
+            private static string ConvertOptionToString(string optionToConvert) => optionToConvert switch { "Human" => "2-Player", "AI" => "Computer", _ => optionToConvert };
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
@@ -375,7 +376,7 @@ namespace TicTacToe
                 } while (selection != "0");
             }
 
-            public void DrawSettings() 
+            private void DrawSettings() 
             {
                 // Output a header
                 Console.WriteLine("\n<<<<< SETTINGS >>>>>");
@@ -393,12 +394,12 @@ namespace TicTacToe
                 Console.WriteLine("\n Enter 0 to exit");
             }
 
-            public void SetAILevel(AIOptions selectedOption)
+            private void SetAILevel(AIOptions selectedOption)
             {
                 // Will fill out when I have implemented the AI Player
             }
 
-            public void ChangeFGColor()
+            private void ChangeFGColor()
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
@@ -428,7 +429,7 @@ namespace TicTacToe
                 };
             }
 
-            public void ChangeBGColor()
+            private void ChangeBGColor()
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
@@ -458,7 +459,7 @@ namespace TicTacToe
                 };
             }
 
-            public static string UserChoice()
+            private static string UserChoice()
             {
                 Console.Write("\nPlease enter the number of the option you'd like to select: ");
                 return Console.ReadLine();
@@ -467,9 +468,65 @@ namespace TicTacToe
             // This translates any weird Enum names to something more presentation friendly. Allows for entering the string version of any enum value and providing an associated friendly string to return, otherwise just returns the string
             private static string MakeFriendlyString(string enumName) => enumName switch { "ChangeFG" => "Change text color", "ChangeBG" => "Change background color", "Reset" => "Reset colors", _ => enumName};
         }
+
+        public class Stats
+        {
+            private readonly string[] _statsProperties = Enum.GetNames(typeof(StatsProperties));
+            private int XWins { get; set; }
+            private int XLosses { get; set; }
+            private int OWins { get; set; }
+            private int OLosses { get; set; }
+            private int HumanGames { get; set; }
+            private int AIGames { get; set; }
+
+            public Stats()
+            {
+                // Reserving this constructor for when I know how to write to files 
+                // at which point the constructor will access the file on startup to
+                // sync the Stats properties with what's in the file. Effectively a 
+                // save system for stats specifically.
+            }
+
+            public void StatsScreen()
+            {
+                do
+                { 
+                    DrawStatsScreen();
+                    Console.WriteLine("\n Enter 0 to exit \n");
+
+                } while (Console.ReadKey(true).Key != ConsoleKey.NumPad0 && Console.ReadKey(true).Key != ConsoleKey.D0);
+            }
+
+            private void DrawStatsScreen()
+            {
+                Console.WriteLine("\n<<<<< STATS >>>>>");
+                for (int i = 0; i < _statsProperties.Length; i++)
+                    Console.WriteLine($" {(StatsProperties)i}: {DetermineStatToShow(i)}");
+            }
+
+            // Figure this will eventually both increment the associated property and write to a save file, before eventually just writing to a save file
+            public void UpdateStat(StatsProperties statToUpdate)
+            {
+                if (statToUpdate == StatsProperties.XWins) XWins++;
+                if (statToUpdate == StatsProperties.XLosses) XLosses++;
+                if (statToUpdate == StatsProperties.OWins) OWins++;
+                if (statToUpdate == StatsProperties.OLosses) OLosses++;
+                if (statToUpdate == StatsProperties.HumanGames) HumanGames++;
+                if (statToUpdate == StatsProperties.AIGames) AIGames++;
+            }
+
+            private int DetermineStatToShow(int statIndex) => statIndex switch { (int)StatsProperties.XWins => XWins, (int)StatsProperties.XLosses => XLosses, (int)StatsProperties.OWins => OWins, (int)StatsProperties.OLosses => OLosses, (int)StatsProperties.HumanGames => HumanGames, (int)StatsProperties.AIGames => AIGames };
+
+            private static string UserChoice()
+            {
+                Console.Write("\nPlease enter the number of the option you'd like to select: ");
+                return Console.ReadLine();
+            }
+        }
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
         public enum AIOptions { Easy, Medium, Hard }
         public enum CustomizeOptions { ChangeFG, ChangeBG, Reset}
+        public enum StatsProperties { XWins, XLosses, OWins, OLosses, HumanGames, AIGames}
     }
 }
