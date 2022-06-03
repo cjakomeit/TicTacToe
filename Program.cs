@@ -315,7 +315,7 @@ namespace TicTacToe
                 Console.WriteLine("<<<<< OPTIONS >>>>>\n");
 
                 for (int i = 0; i < _options.Length; i++)
-                    Console.WriteLine($" {i + 1}: {ConvertOptionToString(_options[i])}");
+                    Console.WriteLine($" {i + 1}: {ConvertOptionToString((Options)i)}");
             }
 
             public Options UserChoice()
@@ -350,7 +350,7 @@ namespace TicTacToe
             public void SetWindowTitle() => Console.Title = _windowTitle;
 
             // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
-            private static string ConvertOptionToString(string optionToConvert) => optionToConvert switch { "Human" => "2-Player", "AI" => "Computer", _ => optionToConvert };
+            private static string ConvertOptionToString(Enum optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => Convert.ToString(optionToConvert) };
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
@@ -386,13 +386,13 @@ namespace TicTacToe
 
                 // Output the AI difficulty options
                 Console.WriteLine("\n* AI Difficulty *");
-                for (int i = 0; i < _aiOptions.Length; i++)
-                    Console.WriteLine($" 1-{i + 1} - {MakeFriendlyString(_aiOptions[i])}");
+                for (int i = 0; i < Enum.GetNames(typeof(AIOptions)).Length; i++)
+                    Console.WriteLine($" 1-{i + 1} - {MakeFriendlyString((AIOptions)i)}");
 
                 // Output the Customization options
                 Console.WriteLine("\n* Customization *");
-                for (int i = 0; i < _customizeOptions.Length; i++)
-                    Console.WriteLine($" 2-{i + 1} - {MakeFriendlyString(_customizeOptions[i])}");
+                for (int i = 0; i < Enum.GetNames(typeof(CustomizeOptions)).Length; i++)
+                    Console.WriteLine($" 2-{i + 1} - {MakeFriendlyString((CustomizeOptions)i)}");
 
                 Console.WriteLine("\n Enter 0 to exit");
             }
@@ -406,8 +406,8 @@ namespace TicTacToe
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
-                for (int i = 0; i < _consoleColors.Length; i++)
-                    Console.WriteLine($" {i + 1} - {_consoleColors[i]} ");
+                for (int i = 0; i < Enum.GetNames(typeof(ConsoleColor)).Length; i++)
+                    Console.WriteLine($" {i + 1} - {MakeFriendlyString((ConsoleColor)i)} ");
                 
                 // Getting the enum's byte value and connecting that to the user input which is converted to a byte
                 Console.ForegroundColor = Convert.ToByte(UserChoice()) - 1 switch 
@@ -436,8 +436,8 @@ namespace TicTacToe
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
-                for (int i = 0; i < _consoleColors.Length; i++)
-                    Console.WriteLine($" {i + 1} - {_consoleColors[i]} ");
+                for (int i = 0; i < Enum.GetNames(typeof(ConsoleColor)).Length; i++)
+                    Console.WriteLine($" {i + 1} - {MakeFriendlyString((ConsoleColor)i)} ");
 
                 // Getting the enum's byte value and connecting that to the user input which is converted to a byte
                 Console.BackgroundColor = Convert.ToByte(UserChoice()) - 1 switch
@@ -468,14 +468,13 @@ namespace TicTacToe
                 return Console.ReadLine();
             }
 
-            // This translates any weird Enum names to something more presentation friendly. Allows for entering the string version of any enum value and providing an associated friendly string to return, otherwise just returns the string
-            private static string MakeFriendlyString(string enumName) => enumName switch { "ChangeFG" => "Change text color", "ChangeBG" => "Change background color", "Reset" => "Reset colors", _ => enumName};
+            // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
+            private static string MakeFriendlyString(Enum enumName) => enumName switch { CustomizeOptions.ChangeFG => "Change text color", CustomizeOptions.ChangeBG => "Change background color", CustomizeOptions.Reset => "Reset colors", _ => Convert.ToString(enumName)};
         }
 
         public class Stats
         {
             // Leaving fields formatted as enum for readability
-            private readonly string[] _statsProperties = Enum.GetNames(typeof(StatsProperties));
             private int XWins;
             private int XLosses;
             private int OWins;
@@ -504,8 +503,8 @@ namespace TicTacToe
             private void DrawStatsScreen()
             {
                 Console.WriteLine("\n<<<<< STATS >>>>>");
-                for (int i = 0; i < _statsProperties.Length; i++)
-                    Console.WriteLine($" {(StatsProperties)i}: {DetermineStatToShow(i)}");
+                for (int i = 0; i < Enum.GetNames(typeof(StatsProperties)).Length; i++)
+                    Console.WriteLine($" {MakeFriendlyString((StatsProperties)i)}: {DetermineStatToShow(i)}");
             }
 
             // Figure this will eventually both increment the associated property and write to a save file, before eventually just writing to a save file
@@ -531,6 +530,7 @@ namespace TicTacToe
             }
 
             private int DetermineStatToShow(int statIndex) => statIndex switch { (int)StatsProperties.XWins => XWins, (int)StatsProperties.XLosses => XLosses, (int)StatsProperties.OWins => OWins, (int)StatsProperties.OLosses => OLosses, (int)StatsProperties.HumanGames => HumanGames, (int)StatsProperties.AIGames => AIGames };
+            private string MakeFriendlyString(StatsProperties statToConvert) => statToConvert switch { StatsProperties.XWins => "X Wins", StatsProperties.XLosses => "X Losses", StatsProperties.OWins => "O Wins", StatsProperties.OLosses => "O Losses", StatsProperties.HumanGames => "2-Player Games", StatsProperties.AIGames => "AI Games" };
         }
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
