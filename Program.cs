@@ -7,24 +7,22 @@ namespace TicTacToe
         static void Main()
         {
             // Initializes screens/game flows, then sets the window title before entering into the main loop
-            Menu titleMenu = new();
             TicTacToeGame game = new();
-            Settings gameSettings = new();
             Stats gameStats = new();
             Options selectedOption;
 
-            titleMenu.SetWindowTitle();
+            Menu.SetWindowTitle();
 
             // Keeps player on title menu until they explicitly ask to leave
             do
             {
-                titleMenu.Display();
-                selectedOption = titleMenu.UserChoice();
+                Menu.Display();
+                selectedOption = Menu.UserChoice();
 
                 if (selectedOption == Options.Human) game.RunGame(gameStats);
                 else if (selectedOption == Options.AI) game.RunGame(gameStats);
                 else if (selectedOption == Options.Stats) gameStats.StatsScreen();
-                else if (selectedOption == Options.Settings) gameSettings.SettingsScreen();
+                else if (selectedOption == Options.Settings) Settings.SettingsScreen();
 
             } while (selectedOption != Options.Quit);
 
@@ -303,29 +301,29 @@ namespace TicTacToe
         // Need a way to make this just a standard Menu class so that it works for both the Title Menu and In-Game menu
         public class Menu
         {
-            private readonly string _windowTitle = "Tic Tac Toe";
-            public string[] _options = Enum.GetNames(typeof(Options));
-
-
+            private static readonly string _windowTitle = "Tic Tac Toe";
+            
             // Constructor initializes the list of options using the enum (would like to find a way to make this more universal)
             //public Menu() => _options = Enum.GetNames(typeof());
 
-            public void Display()
+            public static void Display()
             {
-                Console.WriteLine("<<<<< OPTIONS >>>>>\n");
+                Console.WriteLine("\n+-------------+\n" +
+                                  "| TIC-TAC-TOE |\n" +
+                                  "+-------------+\n");
 
-                for (int i = 0; i < _options.Length; i++)
+                for (int i = 0; i < Enum.GetNames(typeof(Options)).Length; i++)
                     Console.WriteLine($" {i + 1}: {ConvertOptionToString((Options)i)}");
             }
 
-            public Options UserChoice()
+            public static Options UserChoice()
             {
                 while (true)
                 {
                     Console.Write("\nSelect an option by entering the corresponding number: ");
                     byte userInput = Convert.ToByte(Console.ReadLine());
 
-                    if (userInput >= 1 && userInput < _options.Length + 1)
+                    if (userInput >= 1 && userInput < Enum.GetNames(typeof(Options)).Length + 1)
                         return userInput switch
                         {
                             (byte)Options.Human + 1 => Options.Human,
@@ -347,20 +345,16 @@ namespace TicTacToe
 
             }
 
-            public void SetWindowTitle() => Console.Title = _windowTitle;
+            public static void SetWindowTitle() => Console.Title = _windowTitle;
 
             // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
             private static string ConvertOptionToString(Enum optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => Convert.ToString(optionToConvert) };
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
-        public class Settings
+        public static class Settings
         {
-            private readonly string[] _aiOptions = Enum.GetNames(typeof(AIOptions));
-            private readonly string[] _customizeOptions = Enum.GetNames(typeof(CustomizeOptions));
-            private readonly string[] _consoleColors = Enum.GetNames(typeof(ConsoleColor));
-
-            public void SettingsScreen(/*AIPlayer computer*/)
+            public static void SettingsScreen(/*AIPlayer computer*/)
             {
                 // Defining a variable to track user selection
                 string selection;
@@ -379,7 +373,7 @@ namespace TicTacToe
                 } while (selection != "0");
             }
 
-            private void DrawSettings() 
+            private static void DrawSettings() 
             {
                 // Output a header
                 Console.WriteLine("\n<<<<< SETTINGS >>>>>");
@@ -397,12 +391,12 @@ namespace TicTacToe
                 Console.WriteLine("\n Enter 0 to exit");
             }
 
-            private void SetAILevel(AIOptions selectedOption)
+            private static void SetAILevel(AIOptions selectedOption)
             {
                 // Will fill out when I have implemented the AI Player
             }
 
-            private void ChangeFGColor()
+            private static void ChangeFGColor()
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
@@ -432,7 +426,7 @@ namespace TicTacToe
                 };
             }
 
-            private void ChangeBGColor()
+            private static void ChangeBGColor()
             {
                 // Outputting the console color options with an associated index
                 Console.WriteLine("\nConsole color options:");
@@ -530,7 +524,7 @@ namespace TicTacToe
             }
 
             private int DetermineStatToShow(int statIndex) => statIndex switch { (int)StatsProperties.XWins => XWins, (int)StatsProperties.XLosses => XLosses, (int)StatsProperties.OWins => OWins, (int)StatsProperties.OLosses => OLosses, (int)StatsProperties.HumanGames => HumanGames, (int)StatsProperties.AIGames => AIGames };
-            private string MakeFriendlyString(StatsProperties statToConvert) => statToConvert switch { StatsProperties.XWins => "X Wins", StatsProperties.XLosses => "X Losses", StatsProperties.OWins => "O Wins", StatsProperties.OLosses => "O Losses", StatsProperties.HumanGames => "2-Player Games", StatsProperties.AIGames => "AI Games" };
+            private static string MakeFriendlyString(StatsProperties statToConvert) => statToConvert switch { StatsProperties.XWins => "X Wins", StatsProperties.XLosses => "X Losses", StatsProperties.OWins => "O Wins", StatsProperties.OLosses => "O Losses", StatsProperties.HumanGames => "2-Player Games", StatsProperties.AIGames => "AI Games" };
         }
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
