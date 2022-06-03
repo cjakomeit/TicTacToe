@@ -29,6 +29,7 @@ namespace TicTacToe
 
         }
 
+        // Runs the higher level game, with methods for running either an AI or Human game
         public class TicTacToeGame
         {
             public int _roundTracker = 0;
@@ -104,57 +105,8 @@ namespace TicTacToe
 
         }
 
-        public class GameBoard
-        {
-            public static (int x, int y) _boardSize = (3, 3);
-            public BoardTile[,] TileMatrix { get; init; } = new BoardTile[_boardSize.x, _boardSize.y];
-
-            public GameBoard()
-            {
-                for (int i = 0; i < _boardSize.y; i++)
-                {
-                    for (int j = 0; j < _boardSize.x; j++)
-                        TileMatrix[i, j] = new BoardTile(i, j);
-                }
-            }
-
-            public void DrawBoard()
-            {
-                // Drawing an empty line as a buffer
-                Console.WriteLine();
-
-                // Loops through the size of the board in 1 dimension to draw each row
-                for (int i = 0; i < _boardSize.x; i++)
-                {
-                    Console.WriteLine($"  { TileMatrix[i, 0].ConverToChar() } | { TileMatrix[i, 1].ConverToChar()} | { TileMatrix[i, _boardSize.x - 1].ConverToChar() } ");
-
-                    if (i < _boardSize.y - 1)
-                        Console.WriteLine(" ---+---+---");
-                    else continue;
-                }
-
-                Console.WriteLine();
-            }
-
-            // Takes the tile selected by a user, and then uses its coordinates to match it up with the correct tile in the Tile Matrix, then sets the correct contents
-            public void UpdateTileContent(BoardTile tileToUpdate) => TileMatrix[tileToUpdate.Coordinates.x, tileToUpdate.Coordinates.y].XorO = tileToUpdate.XorO;
-
-        }
-
-        public class BoardTile
-        {
-            public (int x, int y) Coordinates { get; init; }
-            public Symbol XorO { get; set; } = Symbol.Empty;
-
-            // Setting the coordinates outright, but leaving the contents to be determined
-            public BoardTile(int x, int y) => Coordinates = (x, y);
-
-            public bool IsEmpty() => XorO == Symbol.Empty;
-
-            public char ConverToChar() => XorO switch { Symbol.X => 'X', Symbol.O => 'O', Symbol.Empty => ' ' };
-
-        }
-
+        // Runs an individual game, to facilitate running a tournament in TicTacToeGame. Knows various board states, and loops checking for win states or draw after each player's turn
+        // Also pulls in a Stats instance in order to increment stats correctly based on Player Symbol
         public class Round
         {
             public int _turnCount = 0;
@@ -250,6 +202,60 @@ namespace TicTacToe
             }
         }
 
+        // Manages the game board, with methods to draw and update tiles
+        public class GameBoard
+        {
+            public static (int x, int y) _boardSize = (3, 3);
+            public BoardTile[,] TileMatrix { get; init; } = new BoardTile[_boardSize.x, _boardSize.y];
+
+            // Creates BoardTile instances based on the dimensions of the board
+            public GameBoard()
+            {
+                for (int i = 0; i < _boardSize.y; i++)
+                {
+                    for (int j = 0; j < _boardSize.x; j++)
+                        TileMatrix[i, j] = new BoardTile(i, j);
+                }
+            }
+
+            public void DrawBoard()
+            {
+                // Drawing an empty line as a buffer
+                Console.WriteLine();
+
+                // Loops through the size of the board in 1 dimension to draw each row
+                for (int i = 0; i < _boardSize.x; i++)
+                {
+                    Console.WriteLine($"  { TileMatrix[i, 0].ConverToChar() } | { TileMatrix[i, 1].ConverToChar()} | { TileMatrix[i, _boardSize.x - 1].ConverToChar() } ");
+
+                    if (i < _boardSize.y - 1)
+                        Console.WriteLine(" ---+---+---");
+                    else continue;
+                }
+
+                Console.WriteLine();
+            }
+
+            // Takes the tile selected by a user, and then uses its coordinates to match it up with the correct tile in the Tile Matrix, then sets the correct contents
+            public void UpdateTileContent(BoardTile tileToUpdate) => TileMatrix[tileToUpdate.Coordinates.x, tileToUpdate.Coordinates.y].XorO = tileToUpdate.XorO;
+        }
+
+        // Holds a value connected to a player symbol enum, and has coordinates to be displayed. Also has methods to check if it's empty or conver the symbol it's holding to a char
+        public class BoardTile
+        {
+            public (int x, int y) Coordinates { get; init; }
+            public Symbol XorO { get; set; } = Symbol.Empty;
+
+            // Setting the coordinates outright, but leaving the contents to be determined
+            public BoardTile(int x, int y) => Coordinates = (x, y);
+
+            public bool IsEmpty() => XorO == Symbol.Empty;
+
+            public char ConverToChar() => XorO switch { Symbol.X => 'X', Symbol.O => 'O', Symbol.Empty => ' ' };
+
+        }
+
+        // Allows for creation of different players using different symbols from the Symbol enum. Contains methods for getting a tile choice from user and checking that tile is valid for play
         public class Player
         {
             public ConsoleKey TileChoice { get; set; }
@@ -301,59 +307,6 @@ namespace TicTacToe
                 ConsoleKey userInput = Console.ReadKey().Key;
                 return userInput;
             }
-        }
-
-        // Need a way to make this just a standard Menu class so that it works for both the Title Menu and In-Game menu
-        public class Menu
-        {
-            private static readonly string _windowTitle = "Tic Tac Toe";
-            
-            // Constructor initializes the list of options using the enum (would like to find a way to make this more universal)
-            //public Menu() => _options = Enum.GetNames(typeof());
-
-            public static void Display()
-            {
-                Console.WriteLine("\n+-------------+\n" +
-                                  "| TIC-TAC-TOE |\n" +
-                                  "+-------------+\n");
-
-                for (int i = 0; i < Enum.GetNames(typeof(Options)).Length; i++)
-                    Console.WriteLine($" {i + 1}: {ConvertOptionToString((Options)i)}");
-            }
-
-            public static Options UserChoice()
-            {
-                while (true)
-                {
-                    Console.Write("\nSelect an option by entering the corresponding number: ");
-                    byte userInput = Convert.ToByte(Console.ReadLine());
-
-                    if (userInput >= 1 && userInput < Enum.GetNames(typeof(Options)).Length + 1)
-                        return userInput switch
-                        {
-                            (byte)Options.Human + 1 => Options.Human,
-                            (byte)Options.AI + 1 => Options.AI,
-                            (byte)Options.Stats + 1 => Options.Stats,
-                            (byte)Options.Settings + 1 => Options.Settings,
-                            (byte)Options.Quit + 1 => Options.Quit
-                        };
-
-                    /* Above is a complex solution that hopefully makes this more adaptable as a single menu class later on.
-                     * Essentially I take each enum and cast it to it's integral value and add 1 to match user input. Then
-                     * use that casted enum value to point directly to the enum value. Not totally sure about this solution
-                     * but looking to the future essentially it would mean just adding whatever enum values and their
-                     * associated byte + 1 values to the switch statement, rather than ensuring the index is correct in the array.
-                    */
-
-                    else Console.WriteLine("Please enter a valid option");
-                }
-
-            }
-
-            public static void SetWindowTitle() => Console.Title = _windowTitle;
-
-            // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
-            private static string ConvertOptionToString(Enum optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => Convert.ToString(optionToConvert) };
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
@@ -471,6 +424,7 @@ namespace TicTacToe
             private static string MakeFriendlyString(Enum enumName) => enumName switch { CustomizeOptions.ChangeFG => "Change text color", CustomizeOptions.ChangeBG => "Change background color", CustomizeOptions.Reset => "Reset colors", _ => Convert.ToString(enumName)};
         }
 
+        // Creates an instance that tracks and outputs stats when requested. Eventually should be able to write to a save file
         public class Stats
         {
             // Leaving fields formatted as enum for readability
@@ -531,6 +485,60 @@ namespace TicTacToe
             private int DetermineStatToShow(int statIndex) => statIndex switch { (int)StatsProperties.XWins => XWins, (int)StatsProperties.XLosses => XLosses, (int)StatsProperties.OWins => OWins, (int)StatsProperties.OLosses => OLosses, (int)StatsProperties.HumanGames => HumanGames, (int)StatsProperties.AIGames => AIGames };
             private static string MakeFriendlyString(StatsProperties statToConvert) => statToConvert switch { StatsProperties.XWins => "X Wins", StatsProperties.XLosses => "X Losses", StatsProperties.OWins => "O Wins", StatsProperties.OLosses => "O Losses", StatsProperties.HumanGames => "2-Player Games", StatsProperties.AIGames => "AI Games" };
         }
+
+        // Need a way to make this just a standard Menu class so that it works for both the Title Menu and In-Game menu
+        public class Menu
+        {
+            private static readonly string _windowTitle = "Tic Tac Toe";
+
+            // Constructor initializes the list of options using the enum (would like to find a way to make this more universal)
+            //public Menu() => _options = Enum.GetNames(typeof());
+
+            public static void Display()
+            {
+                Console.WriteLine("\n+-------------+\n" +
+                                  "| TIC-TAC-TOE |\n" +
+                                  "+-------------+\n");
+
+                for (int i = 0; i < Enum.GetNames(typeof(Options)).Length; i++)
+                    Console.WriteLine($" {i + 1}: {ConvertOptionToString((Options)i)}");
+            }
+
+            public static Options UserChoice()
+            {
+                while (true)
+                {
+                    Console.Write("\nSelect an option by entering the corresponding number: ");
+                    byte userInput = Convert.ToByte(Console.ReadLine());
+
+                    if (userInput >= 1 && userInput < Enum.GetNames(typeof(Options)).Length + 1)
+                        return userInput switch
+                        {
+                            (byte)Options.Human + 1 => Options.Human,
+                            (byte)Options.AI + 1 => Options.AI,
+                            (byte)Options.Stats + 1 => Options.Stats,
+                            (byte)Options.Settings + 1 => Options.Settings,
+                            (byte)Options.Quit + 1 => Options.Quit
+                        };
+
+                    /* Above is a complex solution that hopefully makes this more adaptable as a single menu class later on.
+                     * Essentially I take each enum and cast it to it's integral value and add 1 to match user input. Then
+                     * use that casted enum value to point directly to the enum value. Not totally sure about this solution
+                     * but looking to the future essentially it would mean just adding whatever enum values and their
+                     * associated byte + 1 values to the switch statement, rather than ensuring the index is correct in the array.
+                    */
+
+                    else Console.WriteLine("Please enter a valid option");
+                }
+
+            }
+
+            public static void SetWindowTitle() => Console.Title = _windowTitle;
+
+            // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
+            private static string ConvertOptionToString(Enum optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => Convert.ToString(optionToConvert) };
+        }
+
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
         public enum AIOptions { Easy, Medium, Hard }
