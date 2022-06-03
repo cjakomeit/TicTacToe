@@ -19,8 +19,8 @@ namespace TicTacToe
                 Menu.Display();
                 selectedOption = Menu.UserChoice();
 
-                if (selectedOption == Options.Human) game.RunGame(gameStats);
-                else if (selectedOption == Options.AI) game.RunGame(gameStats);
+                if (selectedOption == Options.Human) game.RunHumanGame(gameStats);
+                else if (selectedOption == Options.AI) game.RunAIGame(gameStats);
                 else if (selectedOption == Options.Stats) gameStats.StatsScreen();
                 else if (selectedOption == Options.Settings) Settings.SettingsScreen();
 
@@ -35,7 +35,7 @@ namespace TicTacToe
             public int _totalRounds;
             public int _roundsNeededToWin;
 
-            public void RunGame(Stats gameStats)
+            public void RunHumanGame(Stats gameStats)
             {
                 // Initializing all needed instances of all objects at this phase
                 Player player1 = new(Symbol.X);
@@ -80,6 +80,11 @@ namespace TicTacToe
 
                 ReportTournamentWinner(player1, player2);
                 gameStats.UpdatePlayedStat(StatsProperties.HumanGames);
+            }
+
+            public void RunAIGame(Stats gameStats)
+            {
+                gameStats.UpdatePlayedStat(StatsProperties.AIGames);
             }
 
             public void ReportTournamentWinner(Player player1, Player player2)
