@@ -7,7 +7,6 @@ namespace TicTacToe
         static void Main()
         {
             // Initializes screens/game flows, then sets the window title before entering into the main loop
-            TicTacToeGame game = new();
             Stats gameStats = new();
             Options selectedOption;
 
@@ -19,8 +18,8 @@ namespace TicTacToe
                 Menu.Display();
                 selectedOption = Menu.UserChoice();
 
-                if (selectedOption == Options.Human) game.RunHumanGame(gameStats);
-                else if (selectedOption == Options.AI) game.RunAIGame(gameStats);
+                if (selectedOption == Options.Human) TicTacToeGame.RunHumanGame(gameStats);
+                else if (selectedOption == Options.AI) TicTacToeGame.RunAIGame(gameStats);
                 else if (selectedOption == Options.Stats) gameStats.StatsScreen();
                 else if (selectedOption == Options.Settings) Settings.SettingsScreen();
 
@@ -30,40 +29,56 @@ namespace TicTacToe
         }
 
         // Runs the higher level game, with methods for running either an AI or Human game
-        public class TicTacToeGame
+        public static class TicTacToeGame
         {
-            public int _roundTracker = 0;
-            public int _totalRounds;
-            public int _roundsNeededToWin;
+            public static int _roundTracker = 0;
+            public static int _totalRounds;
+            public static int _roundsNeededToWin;
 
-            public void RunHumanGame(Stats gameStats)
+            /// <summary>
+            /// Conducts the tournament for two human players
+            /// </summary>
+            /// <param name="gameStats">The instance of the stat tracking class for the game</param>
+            public static void RunHumanGame(Stats gameStats)
             {
-                // Initializing all needed instances of all objects at this phase
-                Player player1 = new(Symbol.X);
-                Player player2 = new(Symbol.O);
+                DetermineTournamentLength();
 
-                Console.Write("\nPlease choose a mode:\n" +
-                                  " 1. Single game\n" +
-                                  " 2. Best of 3\n" +
-                                  " 3. Best of 5\n");
-                _totalRounds = Convert.ToInt32(Console.ReadLine()) switch
-                {
-                    1 => 1,
-                    2 => 3,
-                    3 => 5,
-                    _ => 1
-                };
+                ReportTournamentWinner(GameFlow(new Player(Symbol.X), new Player(Symbol.O), gameStats));
 
-                // Determine the rounds needed to win following player input
-                _roundsNeededToWin = _totalRounds / 2 + 1;
+                gameStats.UpdatePlayedStat(StatsProperties.HumanGames);
+            }
 
+            /// <summary>
+            /// Conducts the tournament for a human player and a computer player
+            /// </summary>
+            /// <param name="gameStats">The instance of the stat tracking class for the game</param>
+            public static void RunAIGame(Stats gameStats)
+            {
+                DetermineTournamentLength();
+                
+                ReportTournamentWinner(GameFlow(new Player(Symbol.X), new AIPlayer(Symbol.O), gameStats));
+
+                gameStats.UpdatePlayedStat(StatsProperties.AIGames);
+            }
+
+            /// <summary>
+            /// Conducts gameplay for both human and AI games
+            /// </summary>
+            /// <param name="player1"></param>
+            /// <param name="player2"></param>
+            /// <param name="gameStats">The instance of the stat tracking class for the game</param>
+            /// <returns>Player class</returns>
+            private static Player GameFlow(Player player1, Player player2, Stats gameStats)
+            {
+                Player winner;
+                
                 do
                 {
                     // Placed at the top to stop unnecessary overcounting
                     _roundTracker++;
 
                     // Block to output helpful info to the players
-                    Console.Write($"\nRound wins needed to win the game: {_totalRounds / 2 + 1}\n" +
+                    Console.Write($"\nRound wins needed to win the game: {_roundsNeededToWin}\n" +
                                   $"Player 1 wins: {player1.NumberWins}\n" +
                                   $"Player 2 wins: {player2.NumberWins}\n");
 
@@ -73,76 +88,79 @@ namespace TicTacToe
                     Console.ReadKey(true);
 
                     // Triggers the next round
-                    Round newRound = new();
-                    newRound.DoRound(player1, player2, gameStats);
-
+                    Round round = new();
+                    winner = round.DoRound(player1, player2, gameStats);
 
                 } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
 
-                ReportTournamentWinner(player1, player2);
-                gameStats.UpdatePlayedStat(StatsProperties.HumanGames);
+                // Resets round count to 0 following completion of a tournament
+                _roundTracker = 0;
+
+                return winner;
             }
 
-            public void RunAIGame(Stats gameStats)
+            // Takes a user input after outputting a list of options, then sets _totalRounds according to user choice, determining _roundsNeededToWin based on the new _totalRounds
+            private static void DetermineTournamentLength()
             {
-                gameStats.UpdatePlayedStat(StatsProperties.AIGames);
+                Console.Write("\nPlease choose a mode:\n" +
+                                  " 1. Single game\n" +
+                                  " 2. Best of 3\n" +
+                                  " 3. Best of 5\n");
+                
+                _totalRounds = Convert.ToInt32(Console.ReadLine()) switch
+                {
+                    1 => 1,
+                    2 => 3,
+                    3 => 5,
+                    _ => 1
+                };
+
+                _roundsNeededToWin = _totalRounds / 2 + 1;
             }
 
-            public void ReportTournamentWinner(Player player1, Player player2)
-            {
-                if (player1.NumberWins == _roundsNeededToWin)
-                    Console.WriteLine("\n +----------+" +
-                                      "\n | Player 1 |" +
-                                      "\n |   Wins!  |" +
-                                      "\n +----------+ \n");
-
-                else if (player2.NumberWins == _roundsNeededToWin)
-                    Console.WriteLine("\n +----------+" +
-                                      "\n | Player 2 |" +
-                                      "\n |   Wins!  |" +
-                                      "\n +----------+ \n");
-            }
+            // Recieves the winner from whatever game type is run and simply outputs that player's associated symbol to report the winner
+            private static void ReportTournamentWinner(Player winner) => Console.WriteLine("\n +----------+" +
+                                                                                          $"\n | Player {winner.PlayerSymbol} |" +
+                                                                                           "\n |   Wins!  |" +
+                                                                                           "\n +----------+ \n");
 
         }
 
         // Runs an individual game, to facilitate running a tournament in TicTacToeGame. Knows various board states, and loops checking for win states or draw after each player's turn
         // Also pulls in a Stats instance in order to increment stats correctly based on Player Symbol
-        public class Round
+        public sealed class Round
         {
-            public int _turnCount = 0;
+            public int _turnCount = 1;
 
-            public void DoRound(Player player1, Player player2, Stats gameStats)
+            public Player DoRound(Player player1, Player player2, Stats gameStats)
             {
                 GameBoard board = new();
 
                 board.DrawBoard();
 
-                do
+                Player currentPlayer = player1;
+
+                while (_turnCount < 10) 
                 {
-                    // Increments the round number after player 2 completes their turn and game hasn't ended, or on game start
-                    _turnCount++;
-
-                    /* Player 1's turn */
+                    // Executes current player's turn 
                     Console.WriteLine($"Turn: {_turnCount}");
-                    Console.WriteLine($"It's Player {player1.PlayerSymbol}'s turn.\n");
-                    player1.SetTileChoice(board);
+                    Console.WriteLine($"It's Player {currentPlayer.PlayerSymbol}'s turn.\n");
+                    currentPlayer.SetTileChoice(board);
                     board.DrawBoard();
 
-                    // Checks for game over after Player 1's turn and breaks immediately if true
-                    if (CheckForRoundOver(board, player1, gameStats)) break;
+                    // Checks for game over and returns whichever player is the current one
+                    if (CheckForRoundOver(board, currentPlayer, gameStats)) return currentPlayer;
 
-                    // Increments the turn number after player 1 completes their turn and game doesn't end
+                    // If the game isn't over, then switch players to proceed with the next turn
+                    currentPlayer = currentPlayer == player1 ? player2 : player1;
+                    
+                    // Increments the round number before loop completes and game hasn't ended
                     _turnCount++;
+                };
 
-                    /* Player 2's turn */
-                    Console.WriteLine($"Turn: {_turnCount}");
-                    Console.WriteLine($"It's Player {player2.PlayerSymbol}'s turn.\n");
-                    player2.SetTileChoice(board);
-                    board.DrawBoard();
-
-                    if (CheckForRoundOver(board, player2, gameStats)) break;
-
-                } while (_turnCount < 10);
+                // Problematic because it returns whoever's turn was last in the case of a draw
+                // ie There are no winners yet this will return this round as a win
+                return currentPlayer;
             }
 
             // Checks for the variety of game over states and sets _gameOver accordingly, then writes the outcome
@@ -306,6 +324,15 @@ namespace TicTacToe
 
                 ConsoleKey userInput = Console.ReadKey().Key;
                 return userInput;
+            }
+        }
+
+        // Class that derives from Player, then adds some decision-making logic with a variability in success factor based on difficulty
+        public class AIPlayer : Player 
+        {
+            public AIPlayer(Symbol symbol) : base(symbol)
+            {
+
             }
         }
 
