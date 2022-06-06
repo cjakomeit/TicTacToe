@@ -24,8 +24,6 @@ namespace TicTacToe
                 else if (selectedOption == Options.Settings) Settings.SettingsScreen();
 
             } while (selectedOption != Options.Quit);
-
-
         }
 
         // Runs the higher level game, with methods for running either an AI or Human game
@@ -67,7 +65,7 @@ namespace TicTacToe
             /// <param name="player1"></param>
             /// <param name="player2"></param>
             /// <param name="gameStats">The instance of the stat tracking class for the game</param>
-            /// <returns>Player class</returns>
+            /// <returns>Player instance</returns>
             private static Player GameFlow(Player player1, Player player2, Stats gameStats)
             {
                 Player winner;
@@ -88,8 +86,7 @@ namespace TicTacToe
                     Console.ReadKey(true);
 
                     // Triggers the next round
-                    Round round = new();
-                    winner = round.DoRound(player1, player2, gameStats);
+                    winner = Round.DoRound(player1, player2, gameStats);
 
                 } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
 
@@ -123,27 +120,26 @@ namespace TicTacToe
                                                                                           $"\n | Player {winner.PlayerSymbol} |" +
                                                                                            "\n |   Wins!  |" +
                                                                                            "\n +----------+ \n");
-
         }
 
         // Runs an individual game, to facilitate running a tournament in TicTacToeGame. Knows various board states, and loops checking for win states or draw after each player's turn
         // Also pulls in a Stats instance in order to increment stats correctly based on Player Symbol
         public sealed class Round
         {
-            public int _turnCount = 1;
-
-            public Player DoRound(Player player1, Player player2, Stats gameStats)
+            public static Player DoRound(Player player1, Player player2, Stats gameStats)
             {
+                int turnCount = 1;
+
                 GameBoard board = new();
 
                 board.DrawBoard();
 
                 Player currentPlayer = player1;
 
-                while (_turnCount < 10) 
+                while (turnCount < 10) 
                 {
                     // Executes current player's turn 
-                    Console.WriteLine($"Turn: {_turnCount}");
+                    Console.WriteLine($"Turn: {turnCount}");
                     Console.WriteLine($"It's Player {currentPlayer.PlayerSymbol}'s turn.\n");
                     currentPlayer.SetTileChoice(board);
                     board.DrawBoard();
@@ -155,16 +151,16 @@ namespace TicTacToe
                     currentPlayer = currentPlayer == player1 ? player2 : player1;
                     
                     // Increments the round number before loop completes and game hasn't ended
-                    _turnCount++;
+                    turnCount++;
                 };
 
-                // Problematic because it returns whoever's turn was last in the case of a draw
-                // ie There are no winners yet this will return this round as a win
+                // Verified through testing that this doesn't cause issues in the case of a draw like previously thought
+                // Realistically should never be reached
                 return currentPlayer;
             }
 
             // Checks for the variety of game over states and sets _gameOver accordingly, then writes the outcome
-            public static bool CheckForRoundOver(GameBoard board, Player currentPlayer, Stats gameStats)
+            private static bool CheckForRoundOver(GameBoard board, Player currentPlayer, Stats gameStats)
             {
                 if (HorizontalWin(board) || VerticalWin(board) || DiagonalWin(board))
                 {
@@ -186,7 +182,7 @@ namespace TicTacToe
             }
 
             // There are three possible win conditions, and can only happen after turn 2. Loops through the three possible conditions based on column
-            public static bool HorizontalWin(GameBoard board)
+            private static bool HorizontalWin(GameBoard board)
             {
                 for (int i = 0; i < GameBoard._boardSize.x; i++)
                     if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && board.TileMatrix[i, 0].XorO != Symbol.Empty) return true;
@@ -195,7 +191,7 @@ namespace TicTacToe
             }
 
             // There are three possible win conditions like with horizontal, and can only happen after turn 2
-            public static bool VerticalWin(GameBoard board)
+            private static bool VerticalWin(GameBoard board)
             {
                 for (int i = 0; i < GameBoard._boardSize.y; i++)
                     if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && board.TileMatrix[0, i].XorO != Symbol.Empty) return true;
@@ -204,7 +200,7 @@ namespace TicTacToe
             }
 
             // There are only two diagonal win possibilities, and can only happen after round two
-            public static bool DiagonalWin(GameBoard board)
+            private static bool DiagonalWin(GameBoard board)
             {
                 if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
                 else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
@@ -212,7 +208,7 @@ namespace TicTacToe
             }
 
             // Currently only detects a full board
-            public static bool CatBoard(GameBoard board)
+            private static bool CatBoard(GameBoard board)
             {
                 foreach (BoardTile tile in board.TileMatrix)
                     if (tile.XorO == Symbol.Empty) return false;
@@ -330,10 +326,8 @@ namespace TicTacToe
         // Class that derives from Player, then adds some decision-making logic with a variability in success factor based on difficulty
         public class AIPlayer : Player 
         {
-            public AIPlayer(Symbol symbol) : base(symbol)
-            {
-
-            }
+            private int _seedValue;
+            public AIPlayer(Symbol symbol/*, int randSeed*/) : base(symbol) { }// => _seedValue = randSeed;
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
