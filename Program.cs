@@ -331,7 +331,7 @@ namespace TicTacToe
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
-        public static class Settings
+        public class Settings : Menu
         {
             public static void SettingsScreen(/*AIPlayer computer*/)
             {
@@ -446,7 +446,7 @@ namespace TicTacToe
         }
 
         // Creates an instance that tracks and outputs stats when requested. Eventually should be able to write to a save file
-        public class Stats
+        public class Stats : Menu
         {
             // Leaving fields formatted as enum for readability
             private int XWins;
