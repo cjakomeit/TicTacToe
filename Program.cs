@@ -326,8 +326,39 @@ namespace TicTacToe
         // Class that derives from Player, then adds some decision-making logic with a variability in success factor based on difficulty
         public class AIPlayer : Player 
         {
-            private int _seedValue;
-            public AIPlayer(Symbol symbol/*, int randSeed*/) : base(symbol) { }// => _seedValue = randSeed;
+            public int difficulty = 2;
+            private Random _randValue = new Random();
+            public AIPlayer(Symbol symbol) : base(symbol) { }
+
+            public void AIMove(GameBoard board, int turn)
+            {
+                bool validChoice = false;
+
+                do
+                {
+                    (int x, int y) randCoordinates = (_randValue.Next(3), _randValue.Next(3));
+
+                    validChoice = ValidTileChoice( randCoordinates switch
+                    {
+                        (0, 0) => board.TileMatrix[0, 0],
+                        (0, 1) => board.TileMatrix[0, 1],
+                        (0, 2) => board.TileMatrix[0, 2],
+                        (1, 0) => board.TileMatrix[1, 0],
+                        (1, 1) => board.TileMatrix[1, 1],
+                        (1, 2) => board.TileMatrix[1, 2],
+                        (2, 0) => board.TileMatrix[2, 0],
+                        (2, 1) => board.TileMatrix[2, 1],
+                        (2, 2) => board.TileMatrix[2, 2]
+                    });
+
+                    if (validChoice)
+                    {
+                        board.TileMatrix[randCoordinates.x,randCoordinates.y].XorO = PlayerSymbol;
+                        board.UpdateTileContent(board.TileMatrix[randCoordinates.x, randCoordinates.y]);
+                        break;
+                    }
+                } while (validChoice != true);
+            }
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
