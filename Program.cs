@@ -18,8 +18,8 @@ namespace TicTacToe
                 Menu.Display();
                 selectedOption = Menu.UserChoice();
 
-                if (selectedOption == Options.Human) TicTacToeGame.RunHumanGame(gameStats);
-                else if (selectedOption == Options.AI) TicTacToeGame.RunAIGame(gameStats);
+                if (selectedOption == Options.Human) TicTacToeGame.RunGame(gameStats, false);
+                else if (selectedOption == Options.AI) TicTacToeGame.RunGame(gameStats, true);
                 else if (selectedOption == Options.Stats) gameStats.StatsScreen();
                 else if (selectedOption == Options.Settings) Settings.SettingsScreen();
 
@@ -34,29 +34,21 @@ namespace TicTacToe
             public static int _roundsNeededToWin;
 
             /// <summary>
-            /// Conducts the tournament for two human players
+            /// Conducts the tournament for two players, using logic to determine if it should do an AI or human game
             /// </summary>
             /// <param name="gameStats">The instance of the stat tracking class for the game</param>
-            public static void RunHumanGame(Stats gameStats)
+            /// <param name="isAIGame">Boolean indicating if the game should play with AI or not</param>
+            public static void RunGame(Stats gameStats, bool isAIGame)
             {
                 DetermineTournamentLength();
 
-                ReportTournamentWinner(GameFlow(new Player(Symbol.X), new Player(Symbol.O), gameStats));
+                if (isAIGame)
+                    ReportTournamentWinner(GameFlow(new Player(Symbol.X), new AIPlayer(Symbol.O), gameStats, isAIGame));
+
+                else
+                    ReportTournamentWinner(GameFlow(new Player(Symbol.X), new Player(Symbol.O), gameStats, isAIGame));
 
                 gameStats.UpdatePlayedStat(StatsProperties.HumanGames);
-            }
-
-            /// <summary>
-            /// Conducts the tournament for a human player and a computer player
-            /// </summary>
-            /// <param name="gameStats">The instance of the stat tracking class for the game</param>
-            public static void RunAIGame(Stats gameStats)
-            {
-                DetermineTournamentLength();
-                
-                ReportTournamentWinner(GameFlow(new Player(Symbol.X), new AIPlayer(Symbol.O), gameStats));
-
-                gameStats.UpdatePlayedStat(StatsProperties.AIGames);
             }
 
             /// <summary>
@@ -66,10 +58,10 @@ namespace TicTacToe
             /// <param name="player2"></param>
             /// <param name="gameStats">The instance of the stat tracking class for the game</param>
             /// <returns>Player instance</returns>
-            private static Player GameFlow(Player player1, Player player2, Stats gameStats)
+            private static Player GameFlow(Player player1, Player player2, Stats gameStats, bool isAIGame)
             {
                 Player winner;
-                
+
                 do
                 {
                     // Placed at the top to stop unnecessary overcounting
@@ -86,7 +78,8 @@ namespace TicTacToe
                     Console.ReadKey(true);
 
                     // Triggers the next round
-                    winner = Round.DoRound(player1, player2, gameStats);
+                    if (isAIGame) winner = Round.DoAIRound(player1, player2 as AIPlayer, gameStats);
+                    else winner = Round.DoHumanRound(player1, player2, gameStats);
 
                 } while (player1.NumberWins < _roundsNeededToWin && player2.NumberWins < _roundsNeededToWin);
 
@@ -103,7 +96,7 @@ namespace TicTacToe
                                   " 1. Single game\n" +
                                   " 2. Best of 3\n" +
                                   " 3. Best of 5\n");
-                
+
                 _totalRounds = Convert.ToInt32(Console.ReadLine()) switch
                 {
                     1 => 1,
@@ -126,7 +119,8 @@ namespace TicTacToe
         // Also pulls in a Stats instance in order to increment stats correctly based on Player Symbol
         public sealed class Round
         {
-            public static Player DoRound(Player player1, Player player2, Stats gameStats)
+            /* There must be a better way to avoid having all this logic essentially twice */
+            public static Player DoHumanRound(Player player1, Player player2, Stats gameStats)
             {
                 int turnCount = 1;
 
@@ -136,20 +130,60 @@ namespace TicTacToe
 
                 Player currentPlayer = player1;
 
-                while (turnCount < 10) 
+                while (turnCount < 10)
                 {
                     // Executes current player's turn 
                     Console.WriteLine($"Turn: {turnCount}");
                     Console.WriteLine($"It's Player {currentPlayer.PlayerSymbol}'s turn.\n");
+
+                    // Gets player's tile choice, including checking for validity
                     currentPlayer.SetTileChoice(board);
+
                     board.DrawBoard();
 
                     // Checks for game over and returns whichever player is the current one
                     if (CheckForRoundOver(board, currentPlayer, gameStats)) return currentPlayer;
 
-                    // If the game isn't over, then switch players to proceed with the next turn
+                    // If the game isn't over, then switch players to proceed with the next turn (according to AI or human)
                     currentPlayer = currentPlayer == player1 ? player2 : player1;
-                    
+
+                    // Increments the round number before loop completes and game hasn't ended
+                    turnCount++;
+                };
+
+                // Verified through testing that this doesn't cause issues in the case of a draw like previously thought
+                // Realistically should never be reached
+                return currentPlayer;
+            }
+
+            public static Player DoAIRound(Player player1, AIPlayer player2, Stats gameStats)
+            {
+                int turnCount = 1;
+
+                GameBoard board = new();
+
+                board.DrawBoard();
+
+                var currentPlayer = player1;
+
+                while (turnCount < 10)
+                {
+                    // Executes current player's turn 
+                    Console.WriteLine($"Turn: {turnCount}");
+                    Console.WriteLine($"It's Player {currentPlayer.PlayerSymbol}'s turn.\n");
+
+                    // Determines if the player is AI or human, then selects the appropriate method
+                    if (currentPlayer is AIPlayer) player2.AIMove(board, turnCount);
+                    else currentPlayer.SetTileChoice(board);
+
+                    board.DrawBoard();
+
+                    // Checks for game over and returns whichever player is the current one
+                    if (CheckForRoundOver(board, currentPlayer, gameStats)) return currentPlayer;
+
+                    // If the game isn't over, then switch players to proceed with the next turn (according to AI or human)
+                    currentPlayer = currentPlayer == player1 ? player2 : player1;
+
                     // Increments the round number before loop completes and game hasn't ended
                     turnCount++;
                 };
@@ -181,8 +215,20 @@ namespace TicTacToe
                 return false;
             }
 
+            // Overload specifically for determing scores for minimax search to facilitate AI moves
+            public static bool CheckForRoundOver(GameBoard board)
+            {
+                if (HorizontalWin(board) || VerticalWin(board) || DiagonalWin(board))
+                    return true;
+
+                else if (CatBoard(board))
+                    return true;
+
+                else return false;
+            }
+
             // There are three possible win conditions, and can only happen after turn 2. Loops through the three possible conditions based on column
-            private static bool HorizontalWin(GameBoard board)
+            public static bool HorizontalWin(GameBoard board)
             {
                 for (int i = 0; i < GameBoard._boardSize.x; i++)
                     if (board.TileMatrix[i, 0].XorO == board.TileMatrix[i, 1].XorO && board.TileMatrix[i, 1].XorO == board.TileMatrix[i, 2].XorO && board.TileMatrix[i, 0].XorO != Symbol.Empty) return true;
@@ -191,7 +237,7 @@ namespace TicTacToe
             }
 
             // There are three possible win conditions like with horizontal, and can only happen after turn 2
-            private static bool VerticalWin(GameBoard board)
+            public static bool VerticalWin(GameBoard board)
             {
                 for (int i = 0; i < GameBoard._boardSize.y; i++)
                     if (board.TileMatrix[0, i].XorO == board.TileMatrix[1, i].XorO && board.TileMatrix[1, i].XorO == board.TileMatrix[2, i].XorO && board.TileMatrix[0, i].XorO != Symbol.Empty) return true;
@@ -200,7 +246,7 @@ namespace TicTacToe
             }
 
             // There are only two diagonal win possibilities, and can only happen after round two
-            private static bool DiagonalWin(GameBoard board)
+            public static bool DiagonalWin(GameBoard board)
             {
                 if (board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
                 else if (board.TileMatrix[1, 1].XorO == board.TileMatrix[0, 0].XorO && board.TileMatrix[1, 1].XorO == board.TileMatrix[2, 2].XorO && board.TileMatrix[1, 1].XorO != Symbol.Empty) return true;
@@ -208,7 +254,7 @@ namespace TicTacToe
             }
 
             // Currently only detects a full board
-            private static bool CatBoard(GameBoard board)
+            public static bool CatBoard(GameBoard board)
             {
                 foreach (BoardTile tile in board.TileMatrix)
                     if (tile.XorO == Symbol.Empty) return false;
@@ -324,21 +370,26 @@ namespace TicTacToe
         }
 
         // Class that derives from Player, then adds some decision-making logic with a variability in success factor based on difficulty
-        public class AIPlayer : Player 
+        public class AIPlayer : Player
         {
             public int difficulty = 2;
             private Random _randValue = new Random();
             public AIPlayer(Symbol symbol) : base(symbol) { }
 
+            // AI player picks random x and y coordinates, then checks to make sure choice is valid. If it's a valid choice, the gameboard will update the tile at cartesian coordinates
             public void AIMove(GameBoard board, int turn)
             {
-                bool validChoice = false;
+                Console.WriteLine("Attempting to determine AI move");
+
+                bool validChoice;
 
                 do
                 {
-                    (int x, int y) randCoordinates = (_randValue.Next(3), _randValue.Next(3));
+                    (int x, int y) randCoordinates = AIMoveSearch.FindBestMove(board, this);//(_randValue.Next(3), _randValue.Next(3));
 
-                    validChoice = ValidTileChoice( randCoordinates switch
+                    Console.WriteLine($"AI chose: {randCoordinates.x}, {randCoordinates.y}");
+
+                    validChoice = ValidTileChoice(randCoordinates switch
                     {
                         (0, 0) => board.TileMatrix[0, 0],
                         (0, 1) => board.TileMatrix[0, 1],
@@ -351,14 +402,31 @@ namespace TicTacToe
                         (2, 2) => board.TileMatrix[2, 2]
                     });
 
+                    Console.WriteLine($"{validChoice}");
+
                     if (validChoice)
                     {
-                        board.TileMatrix[randCoordinates.x,randCoordinates.y].XorO = PlayerSymbol;
+                        board.TileMatrix[randCoordinates.x, randCoordinates.y].XorO = PlayerSymbol;
                         board.UpdateTileContent(board.TileMatrix[randCoordinates.x, randCoordinates.y]);
-                        break;
                     }
-                } while (validChoice != true);
+                } while (validChoice != true && turn < 10);
             }
+
+            public int FindMoveScore(GameBoard board)
+            {
+                // If the round is won by AI, returns +10 to the score of an AI move
+                if (Round.CheckForRoundOver(board) && this.PlayerSymbol == Symbol.O)
+                    return 10;
+
+                // If the round is won by the player, returns -10 to score of an AI move
+                else if (Round.CheckForRoundOver(board) && !(this.PlayerSymbol == Symbol.O))
+                    return -10;
+
+                // If none of the above are true (ie game isn't over), return 0;
+                else
+                    return 0;
+            }
+
         }
 
         // Drives updating the settings for the game. Perhaps should be it's own class
@@ -383,7 +451,7 @@ namespace TicTacToe
                 } while (selection != "0");
             }
 
-            private static void DrawSettings() 
+            private static void DrawSettings()
             {
                 // Output a header
                 Console.WriteLine("\n<<<<< SETTINGS >>>>>");
@@ -412,9 +480,9 @@ namespace TicTacToe
                 Console.WriteLine("\nConsole color options:");
                 for (int i = 0; i < Enum.GetNames(typeof(ConsoleColor)).Length; i++)
                     Console.WriteLine($" {i + 1} - {MakeFriendlyString((ConsoleColor)i)} ");
-                
+
                 // Getting the enum's byte value and connecting that to the user input which is converted to a byte
-                Console.ForegroundColor = Convert.ToByte(UserChoice()) - 1 switch 
+                Console.ForegroundColor = Convert.ToByte(UserChoice()) - 1 switch
                 {
                     (byte)ConsoleColor.Black => ConsoleColor.Black,
                     (byte)ConsoleColor.DarkBlue => ConsoleColor.DarkBlue,
@@ -473,7 +541,7 @@ namespace TicTacToe
             }
 
             // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
-            private static string MakeFriendlyString(Enum enumName) => enumName switch { CustomizeOptions.ChangeFG => "Change text color", CustomizeOptions.ChangeBG => "Change background color", CustomizeOptions.Reset => "Reset colors", _ => Convert.ToString(enumName)};
+            private static string MakeFriendlyString(Enum enumName) => enumName switch { CustomizeOptions.ChangeFG => "Change text color", CustomizeOptions.ChangeBG => "Change background color", CustomizeOptions.Reset => "Reset colors", _ => Convert.ToString(enumName) };
         }
 
         // Creates an instance that tracks and outputs stats when requested. Eventually should be able to write to a save file
@@ -498,7 +566,7 @@ namespace TicTacToe
             public void StatsScreen()
             {
                 do
-                { 
+                {
                     DrawStatsScreen();
                     Console.WriteLine("\n Enter 0 to exit \n");
 
@@ -516,11 +584,11 @@ namespace TicTacToe
             public void UpdateResultStat(Symbol playerSymbol)
             {
                 if (playerSymbol == Symbol.X)
-                { 
-                    XWins++; 
-                    OLosses++; 
+                {
+                    XWins++;
+                    OLosses++;
                 }
-                
+
                 if (playerSymbol == Symbol.O)
                 {
                     OWins++;
@@ -590,6 +658,118 @@ namespace TicTacToe
             // This takes an enum and gives it a special string to output, rather than the raw enum name, unless the enum name is good enough on its own (ie doesn't have a special case assigned)
             private static string ConvertOptionToString(Enum optionToConvert) => optionToConvert switch { Options.Human => "2-Player", Options.AI => "Computer", _ => Convert.ToString(optionToConvert) };
         }
+
+        public static class AIMoveSearch
+        {
+            private static readonly int _MAX = 1000;
+            private static readonly int _MIN = -1000;
+
+            public static (int x, int y) FindBestMove(GameBoard board, AIPlayer player)
+            {
+                int bestScore = _MIN;
+                (int x, int y) bestMove = (-1, -1);
+
+                // Parses all cells, determing the move value for any empty cell, then returning the value of the cell with the best value
+                for (int i = 0; i < GameBoard._boardSize.x; i++)
+                {
+                    for (int j = 0; j < GameBoard._boardSize.y; j++)
+                    {
+                        if (board.TileMatrix[i, j].IsEmpty())
+                        {
+                            // Simulate the move by setting the AI symbol
+                            board.TileMatrix[i, j].XorO = Symbol.O;
+
+                            // Find the move score for this move
+                            int moveScore = Minimax(board, 0, false, player);
+
+                            // Undoing the move
+                            board.TileMatrix[i, j].XorO = Symbol.Empty;
+
+                            // If the moveScore ends up better than the bestScore, then moveScore becomes bestScore, and the coordinates of bestMove are updated to match the move
+                            if (moveScore > bestScore)
+                            {
+                                bestMove.x = i;
+                                bestMove.y = j;
+                                bestScore = moveScore;
+                            }
+                        }
+                    }
+                }
+
+                return bestMove;
+            }
+
+            private static int Minimax(GameBoard board, int depth, bool maximizingPlayer, AIPlayer player)
+            {
+                int score = player.FindMoveScore(board);
+
+                // If maximizing player has won, return the evaluated score
+                if (score == 10) return score;
+
+                // If minimizing player has won, return the evaluated score
+                if (score == -10) return score;
+
+                // If no moves are left, return draw score (0)
+                if (Round.CatBoard(board)) return 0;
+
+                if (maximizingPlayer)
+                {
+                    int best = _MIN;
+
+                    // Searches all cells, row then column, to find an empty cell to simulate a move
+                    for (int i = 0; i < GameBoard._boardSize.x; i++)
+                    {
+                        for (int j = 0; j < GameBoard._boardSize.y; j++)
+                        {
+                            //Console.WriteLine($"i: {i}, j: {j}");
+
+                            if (board.TileMatrix[i, j].IsEmpty()) // Index out of bounds of array exception thrown 
+                            {
+                                // Sets the tile to the AI player's symbol to simulate the move, as long as it's empty
+                                board.TileMatrix[i, j].XorO = Symbol.O;
+
+                                // Recursively chooses the maximum value of the move. If value returned is greater than best (default -1000), then the best value is overwritten with the returned value
+                                best = Math.Max(best, Minimax(board, depth + 1, !maximizingPlayer, player));
+
+                                // Undoes the move to clean up the search
+                                board.TileMatrix[i, j].XorO = Symbol.Empty;
+                            }
+                        }
+                    }
+
+                    // Once all cells have been evaluated, the best value (maximized) is returned
+                    return best- depth;
+                }
+
+                else
+                {
+                    int best = _MAX;
+
+                    // Searches all cells, row then column, to find an empty cell to simulate a move
+                    for (int i = 0; i < GameBoard._boardSize.x; i++)
+                    {
+                        for (int j = 0; j < GameBoard._boardSize.y; j++)
+                        {
+                            if (board.TileMatrix[i, j].IsEmpty())
+                            {
+                                // Sets the tile to the AI player's symbol to simulate the move, as long as it's empty
+                                board.TileMatrix[i, j].XorO = Symbol.X;
+
+                                // Recursively chooses the minimum value of the move. If value returned is greater than best (default 1000), then the best value is overwritten with the returned value
+                                best = Math.Min(best, Minimax(board, depth + 1, !maximizingPlayer, player));
+
+                                // Undoes the move to clean up the search
+                                board.TileMatrix[i, j].XorO = Symbol.Empty;
+                            }
+                        }
+                    }
+
+                    // Once all cells have been evaluated, the best value (minimized) is returned
+                    return best + depth;
+                }
+            }
+        }
+            
 
         public enum Symbol { Empty, X, O }
         public enum Options { Human, AI, Stats, Settings, Quit }
